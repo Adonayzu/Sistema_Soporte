@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  rabbitmq-soporte:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq-soporte-container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data_soporte:/var/lib/rabbitmq
+      - rabbitmq_logs_soporte:/var/log/rabbitmq
+    networks:
+      - red-cola_soporte
+
+  mysql-soporte-sms:
+    image: mysql
+    container_name: mysql-soporte-container
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sistema_soporte2024
+      MYSQL_USER: adonay
+      MYSQL_PASSWORD: 12345
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_soporte:/var/lib/mysql
+    networks:
+      - red-cola_soporte
+
+  productor:
+    build: ./productor
+    container_name: productor-container
+    environment:
+      - port=5000
+    ports:
+      - "5000:5000"
+    networks:
+      - red-cola_soporte
+    depends_on:
+      - rabbitmq-soporte
+
+  consumidor:
+    build: ./consumidor           # Apunta a la carpeta 'cola'
+    container_name: consumidor-container
+    environment:
+        - port=5001
+    ports:
+        - "5001:5001"
+    networks:
+      - red-cola_soporte
+    depends_on:
+      - rabbitmq-soporte
+      - mysql-soporte-sms
+
+
+volumes:
+  mysql_soporte:
+  rabbitmq_data_soporte:
+  rabbitmq_logs_soporte:
+
+networks:
+  red-cola_soporte:
